@@ -1,0 +1,42 @@
+# Entornos virtuales
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Variables de entorno
+.env
+
+# Archivos de datos y modelos pesados
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.h5
+*.keras
+*.pt
+*.pth
+
+# Bases de datos
+*.db
+*.sqlite
+*.sqlite3
+
+# Carpeta de uploads
+uploads/
