@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>SIDENI · Precisión Ocular (Demo)</title>
+
+  <style>
+    :root{
+      --navy: #0B3C7B;
+      --card-bg:#ffffff;
+      --text:#0b1e3a;
+      --muted:#516779;
+      --accent:#1e90ff;
+      --radius:12px;
+    }
+
+    /* ---------- Layout general ---------- */
+    html,body{height:100%; margin:0; font-family: Inter, system-ui, Arial; color:var(--text);}
+    body{
+      background:var(--navy);
+      -webkit-font-smoothing:antialiased;
+      overflow:hidden; /* evita la barra de scroll vertical */
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      box-sizing:border-box;
+    }
+
+    /* contenedor principal que ocupa la mayor parte de la pantalla */
+    .page-wrap{
+      width:min(1200px,96%);
+      height:86vh;
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+      box-sizing:border-box;
+    }
+
+    .wrap{
+      display:grid;
+      grid-template-columns: 1fr 420px;
+      gap:22px;
+      height: calc(100% - 110px);
+    }
+
+    .card{
+      background:var(--card-bg);
+      border-radius:var(--radius);
+      padding:20px;
+      box-shadow: 0 10px 26px rgba(2,15,29,0.18);
+      box-sizing:border-box;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    .left{ display:flex; flex-direction:column; padding:28px; gap:14px; }
+
+    .video-box{
+      width:100%;
+      max-height:260px;
+      height:260px;
+      border-radius:14px;
+      border:8px solid rgba(11,60,123,0.12);
+      overflow:hidden;
+      background: linear-gradient(180deg, rgba(11,60,123,0.03), rgba(11,60,123,0.01));
+      display:block;
+    }
+    .video-box video{
+      width:100%; height:100%; object-fit:cover; display:block;
+    }
+
+    h1{ margin:0; margin-top:6px; font-size:34px; line-height:1.02; font-weight:800; color:#072243; }
+    p.lead{ margin:6px 0 0; color:var(--muted); font-size:15px; }
+
+    .right{ padding:28px; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:12px; }
+    .logo{ width:210px; height:210px; object-fit:contain; display:block; margin-bottom:6px; }
+
+    label{ display:block; width:100%; font-size:13px; color:#274656; margin-top:8px }
+    input[type="email"], input[type="password"], input[type="text"], input[type="number"], select{
+      width:100%; padding:10px 12px; border-radius:8px; border:1px solid rgba(1,35,69,0.08); margin-top:6px; box-sizing:border-box;
+    }
+
+    .btn{ padding:10px 14px; border-radius:8px; border:none; cursor:pointer; background:var(--accent); color:white; }
+    .secondary{ background:transparent; color:var(--navy); border:1px solid rgba(11,60,123,0.08) }
+    .small-muted{ font-size:13px; color:var(--muted); text-align:center; margin-top:12px }
+
+    .bottom-row{ height:94px; display:flex; gap:18px; align-items:stretch; }
+    .about-card{ flex:1; padding:18px; border-radius:12px; background:var(--card-bg); box-shadow: 0 8px 20px rgba(2,15,29,0.12); display:flex; flex-direction:column; justify-content:center; gap:8px; box-sizing:border-box; }
+    .about-card strong{ font-size:15px; display:block; color:#18334b; margin-bottom:4px }
+    .about-card p{ margin:0; color:var(--muted); font-size:13px; line-height:1.35 }
+
+    footer{ color:rgba(255,255,255,0.8); font-size:12px; text-align:center; margin-top:6px; }
+
+    /* ---------- MODALES (doctor / paciente / registro) ---------- */
+    .modal{ position:fixed; inset:0; display:none; place-items:center; background:rgba(2,15,29,0.55); z-index:2000; }
+    .modal.open{ display:grid; }
+    .modal-card { width: min(720px, 96%); background: #fff; border-radius: 12px; padding: 18px; box-sizing: border-box; }
+
+    .error { color: #a00; font-size:13px; margin-top:6px; }
+    .success { color: #0a6; font-size:13px; margin-top:6px; }
+
+    .modal-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+    .modal-actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
+    .msg-inline{ font-size:13px; color:green; margin-top:6px }
+    .err-inline{ font-size:13px; color:#c0392b; margin-top:6px }
+
+    @media (max-width:980px){
+      .wrap{ grid-template-columns: 1fr; height:auto; gap:12px; }
+      .page-wrap{ height:auto; }
+      body{ overflow:auto; }
+      .bottom-row{ flex-direction:column; height:auto; gap:12px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page-wrap">
+    <div class="wrap">
+      <!-- IZQUIERDA -->
+      <section class="card left">
+        <div class="video-box" id="video-box">
+          <!-- video por defecto (static/eye.mp4) -->
+          <video id="main-video" src="/static/eye.mp4" autoplay muted loop playsinline></video>
+        </div>
+
+        <div>
+          <h1>Precisión ocular para la evaluación del Nistagmo</h1>
+          <p class="lead">Herramienta demo para la gestión clínica: registro de usuarios y doctores, carga de videos de paciente y almacenamiento de resultados clínicos. El análisis del video (red neuronal) se integra por separado — hay huecos comentados en el código para que el desarrollador añada esa parte.</p>
+        </div>
+      </section>
+
+      <!-- DERECHA -->
+      <aside class="card right">
+        <img src="/static/logo-sideni2.png" class="logo" alt="logo SIDENI">
+        <form id="login-form" style="width:100%; max-width:360px">
+          <label>Correo
+            <input type="email" id="login-email" placeholder="tu@clinica.com" autocomplete="username">
+          </label>
+
+          <label>Contraseña
+            <input type="password" id="login-pass" placeholder="•••••••" autocomplete="current-password">
+          </label>
+
+          <div style="display:flex; gap:10px; margin-top:12px">
+            <button type="button" id="btn-login" class="btn">Entrar</button>
+            <button type="button" id="btn-open-register" class="btn secondary">Crear cuenta</button>
+          </div>
+
+          <div class="small-muted">¿Necesitas crear una cuenta? Pulsa Crear cuenta</div>
+
+          <div style="margin-top:12px; width:100%; text-align:center;">
+            <button type="button" id="btn-open-paciente" class="btn secondary" style="width:100%;">Registrar paciente (demo)</button>
+          </div>
+        </form>
+      </aside>
+    </div>
+
+    <div class="bottom-row">
+      <div class="about-card">
+        <strong>Nosotros</strong>
+        <p>SIDENI es un sistema de apoyo para la evaluación clínica del nistagmo que permite a profesionales registrar usuarios y doctores, gestionar historiales de pacientes y subir videos para su posterior análisis. Esta demo está pensada para facilitar la integración del módulo de análisis (por ejemplo, una red neuronal) de forma independiente.</p>
+      </div>
+    </div>
+
+    <footer>©️ <span id="y"></span> SIDENI - Demo</footer>
+  </div>
+
+  <!-- MODAL: Registro de cuenta -->
+  <div class="modal" id="modal-registro" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="reg-title">
+      <h3 id="reg-title">Crear cuenta</h3>
+      <div style="font-size:13px;color:var(--muted); margin-bottom:8px">Introduce tu correo y contraseña para crear la cuenta (demo).</div>
+
+      <div style="display:grid; gap:8px;">
+        <label>Correo
+          <input id="reg-email" type="email" placeholder="tu@clinica.com">
+        </label>
+        <label>Contraseña
+          <input id="reg-pass" type="password" placeholder="Contraseña">
+        </label>
+
+        <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:8px;">
+          <button id="reg-close" type="button" class="secondary">Cerrar</button>
+          <button id="reg-save" type="button" class="btn">Crear cuenta</button>
+        </div>
+
+        <div id="reg-msg" class="msg-inline" style="display:none"></div>
+        <div id="reg-err" class="err-inline" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Doctor (abre después del login exitoso) -->
+  <div class="modal" id="modal-doctor" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="doc-title">
+      <h3 id="doc-title">Perfil del doctor</h3>
+      <div style="font-size:13px;color:var(--muted);">Completa el perfil del doctor. Estos datos se asociarán al correo con el que iniciaste sesión.</div>
+
+      <div style="margin-top:12px" class="modal-grid">
+        <div>
+          <label>Nombre completo
+            <input id="doc-nombre" type="text" placeholder="Dr. Nombre Apellido">
+          </label>
+          <label>Género
+            <select id="doc-genero"><option value="">Selecciona…</option><option>Femenino</option><option>Masculino</option><option>No binario</option></select>
+          </label>
+        </div>
+
+        <div>
+          <label>Ocupación
+            <input id="doc-ocupacion" type="text" placeholder="Oftalmólogo / Neurofisiólogo">
+          </label>
+          <label>Clínica / hospital
+            <input id="doc-clinica" type="text" placeholder="Nombre de la clínica">
+          </label>
+        </div>
+      </div>
+
+      <div class="msg-inline" id="doc-msg" style="display:none"></div>
+      <div class="err-inline" id="doc-err" style="display:none"></div>
+
+      <div class="modal-actions">
+        <button id="doc-close" type="button" class="secondary">Cerrar</button>
+        <button id="doc-save" type="button" class="btn">Guardar perfil</button>
+        <button id="open-paciente" type="button" class="btn" style="display:none; background:#2ecc71">Registrar paciente</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Paciente con selector de archivo -->
+  <div class="modal" id="modal-paciente" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="pac-title">
+      <h3 id="pac-title">Registrar paciente</h3>
+      <div style="font-size:13px;color:var(--muted)">Introduce los datos básicos del paciente y selecciona el video desde tu PC.</div>
+
+      <div style="margin-top:12px" class="modal-grid">
+        <div>
+          <label>Nombre completo
+            <input id="pac-nombre" type="text" placeholder="Nombre Paciente">
+          </label>
+          <label>Edad
+            <input id="pac-edad" type="number" placeholder="Edad">
+          </label>
+        </div>
+
+        <div>
+          <label>Género
+            <select id="pac-genero"><option value="">Selecciona…</option><option>Femenino</option><option>Masculino</option><option>No binario</option></select>
+          </label>
+
+          <!-- Aquí está el input file que permite elegir video -->
+          <label>Seleccionar video (archivo)
+            <input id="pac-video-file" type="file" accept="video/*">
+            <input id="pac-video" type="text" placeholder="Archivo seleccionado: ninguno" readonly style="margin-top:8px;">
+          </label>
+        </div>
+      </div>
+
+      <div class="msg-inline" id="pac-msg" style="display:none"></div>
+      <div class="err-inline" id="pac-err" style="display:none"></div>
+
+      <div class="modal-actions">
+        <button id="pac-close" type="button" class="secondary">Cerrar</button>
+        <button id="pac-save" type="button" class="btn">Registrar paciente</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  document.getElementById('y').textContent = new Date().getFullYear();
+
+  // Estado de sesión
+  let currentUser = null; // { usuario_id, email }
+
+  /* -------------------- Registro (modal) -------------------- */
+  const modalRegistro = document.getElementById('modal-registro');
+  document.getElementById('btn-open-register').addEventListener('click', ()=> {
+    document.getElementById('reg-email').value = '';
+    document.getElementById('reg-pass').value = '';
+    document.getElementById('reg-msg').style.display='none';
+    document.getElementById('reg-err').style.display='none';
+    modalRegistro.classList.add('open'); modalRegistro.setAttribute('aria-hidden','false');
+  });
+  document.getElementById('reg-close').addEventListener('click', ()=> {
+    modalRegistro.classList.remove('open'); modalRegistro.setAttribute('aria-hidden','true');
+  });
+
+  // Crear cuenta: POST /api/usuarios
+  document.getElementById('reg-save').addEventListener('click', async () => {
+    const email = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-pass').value;
+    document.getElementById('reg-msg').style.display='none'; document.getElementById('reg-err').style.display='none';
+    if(!email || !password){ document.getElementById('reg-err').textContent='Correo y contraseña requeridos'; document.getElementById('reg-err').style.display='block'; return; }
+
+    try {
+      const res = await fetch('/api/usuarios', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ email, password })
+      });
+      const j = await res.json();
+      if(res.ok && j.ok){
+        // éxito: guardar user.email y cerrar modal
+        currentUser = { email };
+        document.getElementById('reg-msg').textContent = j.mensaje || 'Cuenta creada correctamente';
+        document.getElementById('reg-msg').style.display='block';
+        setTimeout(()=> {
+          modalRegistro.classList.remove('open'); modalRegistro.setAttribute('aria-hidden','true');
+        }, 900);
+      } else {
+        document.getElementById('reg-err').textContent = j.mensaje || JSON.stringify(j);
+        document.getElementById('reg-err').style.display='block';
+      }
+    } catch(e){
+      document.getElementById('reg-err').textContent = 'Error: ' + (e.message||e);
+      document.getElementById('reg-err').style.display='block';
+    }
+  });
+
+  /* -------------------- Login -------------------- */
+  document.getElementById('btn-login').addEventListener('click', async () => {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-pass').value;
+    if(!email || !password){ alert('Introduce correo y contraseña'); return; }
+
+    try {
+      const res = await fetch('/api/login', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ email, password })
+      });
+      const j = await res.json();
+      if(res.ok && j.ok){
+        currentUser = j.usuario || { email };
+        alert('Login correcto');
+        openDoctorModal();
+      } else {
+        alert('Error al iniciar sesión: ' + (j.mensaje || JSON.stringify(j)));
+      }
+    } catch(e){
+      alert('Error de conexión con el backend: ' + (e.message || e));
+    }
+  });
+
+  /* -------------------- Doctor modal -------------------- */
+  const modalDoctor = document.getElementById('modal-doctor');
+  const docSaveBtn = document.getElementById('doc-save');
+  const docCloseBtn = document.getElementById('doc-close');
+  const openPacienteBtn = document.getElementById('open-paciente');
+  const docMsg = document.getElementById('doc-msg'); const docErr = document.getElementById('doc-err');
+
+  function openDoctorModal(){
+    docMsg.style.display='none'; docErr.style.display='none';
+    document.getElementById('doc-nombre').value=''; document.getElementById('doc-genero').value=''; document.getElementById('doc-ocupacion').value=''; document.getElementById('doc-clinica').value='';
+    openPacienteBtn.style.display='none';
+    modalDoctor.classList.add('open'); modalDoctor.setAttribute('aria-hidden','false');
+  }
+  function closeDoctorModal(){ modalDoctor.classList.remove('open'); modalDoctor.setAttribute('aria-hidden','true'); }
+  docCloseBtn.addEventListener('click', ()=> closeDoctorModal());
+
+  docSaveBtn.addEventListener('click', async () => {
+    docMsg.style.display='none'; docErr.style.display='none';
+    const nombre = document.getElementById('doc-nombre').value.trim();
+    const genero = document.getElementById('doc-genero').value;
+    const ocupacion = document.getElementById('doc-ocupacion').value.trim();
+    const clinica = document.getElementById('doc-clinica').value.trim();
+    const usuario_email = currentUser?.email || document.getElementById('login-email').value.trim();
+    if(!usuario_email){ docErr.textContent='Usuario no autenticado'; docErr.style.display='block'; return; }
+    if(!nombre){ docErr.textContent='Nombre del doctor requerido'; docErr.style.display='block'; return; }
+
+    try {
+      const res = await fetch('/api/doctores', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({nombre,genero,ocupacion,clinica,usuario_email}) });
+      const j = await res.json();
+      if(res.ok && j.ok){
+        docMsg.textContent = j.mensaje || 'Doctor guardado correctamente'; docMsg.style.display='block';
+        openPacienteBtn.style.display='inline-block';
+      } else {
+        docErr.textContent = j.mensaje || JSON.stringify(j); docErr.style.display='block';
+      }
+    } catch(e){
+      docErr.textContent = 'Error interno: ' + (e.message || e); docErr.style.display='block';
+    }
+  });
+
+  openPacienteBtn.addEventListener('click', () => {
+    closeDoctorModal();
+    openPacienteModal();
+  });
+
+  /* -------------------- Paciente modal + selector de archivo -------------------- */
+  const modalPaciente = document.getElementById('modal-paciente');
+  const pacSaveBtn = document.getElementById('pac-save');
+  const pacCloseBtn = document.getElementById('pac-close');
+  const pacMsg = document.getElementById('pac-msg'); const pacErr = document.getElementById('pac-err');
+  const fileInput = document.getElementById('pac-video-file');
+  const pacVideoText = document.getElementById('pac-video');
+  const mainVideo = document.getElementById('main-video');
+  let selectedVideoFile = null;
+
+  function openPacienteModal(){
+  pacMsg.style.display='none';
+  pacErr.style.display='none';
+
+  document.getElementById('pac-nombre').value = '';
+  document.getElementById('pac-edad').value = '';
+  document.getElementById('pac-genero').value = '';
+  pacVideoText.value = 'Archivo seleccionado: ninguno';
+  fileInput.value = '';  
+  selectedVideoFile = null;  
+
+  modalPaciente.classList.add('open');
+  modalPaciente.setAttribute('aria-hidden','false');
+}
+
+  function closePacienteModal(){ modalPaciente.classList.remove('open'); modalPaciente.setAttribute('aria-hidden','true'); }
+  pacCloseBtn.addEventListener('click', ()=> closePacienteModal());
+
+  // Cuando el usuario selecciona un archivo:
+  fileInput.addEventListener('change', (e) => {
+    const f = e.target.files && e.target.files[0];
+    if(f){
+      selectedVideoFile = f;
+      pacVideoText.value = `Archivo seleccionado: ${f.name}`;
+      // PREVISUALIZACIÓN ELIMINADA: No reasignamos mainVideo.src ni reproducimos.
+    } else {
+      selectedVideoFile = null;
+      pacVideoText.value = 'Archivo seleccionado: ninguno';
+    }
+  });
+
+  // función para intentar subir el archivo al backend (opcional, no se usa ahora)
+  async function tryUploadVideoFile(){
+    if(!selectedVideoFile) return { ok:true, filename: '' }; // nada que subir
+    const fd = new FormData();
+    fd.append('video', selectedVideoFile);
+    try {
+      const res = await fetch('/api/upload_video', { method:'POST', body: fd });
+      if(res.ok){
+        const j = await res.json();
+        return j; // se espera { ok:true, filename: "ruta/o_nombre.ext" }
+      } else {
+        // no disponible o falla
+        return { ok:false, status: res.status, text: await res.text() };
+      }
+    } catch(e){
+      return { ok:false, error: e.message || e };
+    }
+  }
+
+  // CORRECCIÓN COMPLETA: enviar multipart/form-data (FormData) para que FastAPI reciba Form(...) y File(...)
+pacSaveBtn.addEventListener('click', async (event) => {
+  event.preventDefault();
+
+  pacMsg.style.display = 'none';
+  pacErr.style.display = 'none';
+
+  const nombre = document.getElementById('pac-nombre').value.trim();
+  const edad = document.getElementById('pac-edad').value;
+  const genero = document.getElementById('pac-genero').value;
+
+  if (!nombre) {
+    pacErr.textContent = 'Nombre del paciente requerido';
+    pacErr.style.display = 'block';
+    return;
+  }
+
+  /* =================================================
+      CREAR PACIENTE (JSON)
+     ================================================= */
+  const resPac = await fetch('/api/pacientes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nombre, edad, genero })
+  });
+
+  const pacData = await resPac.json();
+
+  if (!resPac.ok || !pacData.ok) {
+    pacErr.textContent = pacData.mensaje || 'Error al crear paciente';
+    pacErr.style.display = 'block';
+    return;
+  }
+
+  const paciente_id = pacData.paciente_id;
+
+  /* =================================================
+      SUBIR VIDEO (FormData)
+     ================================================= */
+  if (!selectedVideoFile) {
+    pacErr.textContent = 'Debes seleccionar un archivo de video';
+    pacErr.style.display = 'block';
+    return;
+  }
+
+  const fd = new FormData();
+  fd.append('paciente_id', paciente_id);
+  fd.append('file', selectedVideoFile);
+
+  const resVid = await fetch('/api/upload_video', {
+    method: 'POST',
+    body: fd
+  });
+
+  const vidData = await resVid.json();
+
+  if (!resVid.ok || !vidData.ok) {
+    pacErr.textContent = vidData.mensaje || 'Error al subir el video';
+    pacErr.style.display = 'block';
+    return;
+  }
+
+  /* =================================================
+      ANALIZAR VIDEO (CNN-LSTM) - UNA SOLA LLAMADA
+     ================================================= */
+  const resAna = await fetch('/api/analyze_video', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      paciente_id: paciente_id,
+      video_id: vidData.video_id  // Usar video_id, no ruta
+    })
+  });
+
+  const anaData = await resAna.json();
+
+  if (!resAna.ok || !anaData.ok) {
+    pacErr.textContent = anaData.mensaje || 'Error al analizar el video';
+    pacErr.style.display = 'block';
+    return;
+  } 
+
+  /* =================================================
+      MOSTRAR DIAGNÓSTICO EN PANTALLA
+     ================================================= */
+  // El backend devuelve 'diagnostico', no 'resultado'
+  const diagnostico = anaData.diagnostico;
+  let mensaje = anaData.mensaje || '';
+
+  // Si no viene mensaje, generarlo según diagnóstico
+  if (!mensaje) {
+    switch (diagnostico) {
+      case 'no_nistagmo':
+        mensaje = ' Felicidades, no se detecta nistagmo';
+        break;
+      case 'leve':
+        mensaje = ' Nistagmo leve detectado';
+        break;
+      case 'moderado':
+        mensaje = ' Nistagmo moderado detectado';
+        break;
+      case 'severo':
+        mensaje = ' Nistagmo severo detectado';
+        break;
+      default:
+        mensaje = 'Análisis completado';
+    }
+  }
+
+  pacMsg.innerHTML = `
+    <strong>Paciente registrado:</strong><br>
+    ${nombre} (${edad} años, ${genero})<br><br>
+    <strong>Diagnóstico:</strong><br>
+    ${mensaje}<br><br>
+    <small>Confianza: ${(anaData.score * 100).toFixed(2)}%</small>
+    <button onclick="closePacienteModal()">Aceptar</button>
+  `;
+  pacMsg.style.display = 'block';
+
+  // Cerrar automáticamente después de 3 segundos
+  //setTimeout(() => closePacienteModal(), 10000);
+
+});
+
+</script>
+</body>
+</html>
+
