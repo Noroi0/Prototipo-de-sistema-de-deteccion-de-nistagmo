@@ -1,0 +1,6 @@
+fastapi
+passlib
+uvicorn
+opencv-python
+mediapipe
+tensorflow
