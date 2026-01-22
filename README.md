@@ -7,6 +7,7 @@ utilizando técnicas de inteligencia artificial.
 - Documentación técnica
 - Manual de usuario
 - Reporte final del proyecto
+- Evidencia del funcionamiento
 
 ## Documentación
 La documentación completa se encuentra en la carpeta `docs/`.
